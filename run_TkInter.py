@@ -1,8 +1,23 @@
 import subprocess
+import pkg_resources
 import sys
- 
-def install(package):
-    subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+
+
+def install_package(package_name):
+    subprocess.check_call([sys.executable, "-m", "pip", "install", package_name])
+
+
+def is_package_installed(package_name):
+    try:
+        pkg_resources.get_distribution(package_name)
+        return True
+    except pkg_resources.DistributionNotFound:
+        return False
+        
+for pkg in ["requests", "pyzbar", "opencv-python"]:
+    if not is_package_installed(pkg):
+        print(f"Package {pkg} not found. Installing...")
+        install_package(pkg)
  
 # Install packages
 install("opencv-python")
