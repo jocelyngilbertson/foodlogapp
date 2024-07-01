@@ -1,3 +1,6 @@
+#api_keys.py 
+# uncomment after you've added your keys to it
+
 .DS_Store
 # Byte-compiled / optimized / DLL files
 __pycache__/
