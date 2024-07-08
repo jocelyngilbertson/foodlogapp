@@ -4,9 +4,12 @@ import sys
 def install(package):
     subprocess.check_call([sys.executable, "-m", "pip", "install", package])
  
-# Install packages (Not sure if you have this installled yet)
+# Install packages
+# install("opencv-python")
+# install("pyzbar")
+# install("requests")
 # install ("ttkbootstrap")
-
+ 
 import tkinter as tk
 from tkinter import messagebox
 from PIL import Image, ImageTk
@@ -16,7 +19,10 @@ import requests
 import sqlite3
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
-from api_keys import EDAMAM_APP_ID, EDAMAM_APP_KEY
+
+# Replace with your Edamam API credentials
+EDAMAM_APP_ID = 'c84de14f'
+EDAMAM_APP_KEY = '1ebb13efd3d06a3c1d33a6c10cd660b3'
 
 class MealTrackerApp:
     def __init__(self, root):
@@ -52,17 +58,46 @@ class MealTrackerApp:
         self.conn.commit()
 
     def setup_frames(self):
-        self.top_frame = ttk.Frame(self.root)
+        self.top_frame = tk.Frame(self.root)
         self.top_frame.pack(pady=10)
 
-        self.middle_frame = ttk.Frame(self.root)
+        self.middle_frame = tk.Frame(self.root)
         self.middle_frame.pack(pady=10)
 
-        self.bottom_frame = ttk.Frame(self.root)
+        self.bottom_frame = tk.Frame(self.root)
         self.bottom_frame.pack(pady=10)
 
-        self.camera_frame = ttk.Frame(self.root)
+        self.camera_frame = tk.Frame(self.root)
         self.camera_frame.pack(pady=10)
+        # Open the video source
+        self.vid = cv2.VideoCapture(0)
+
+        # Create a canvas that can fit the above video source size
+        self.scanvas = tk.Canvas(self.camera_frame, width=self.vid.get(cv2.CAP_PROP_FRAME_WIDTH), height=self.vid.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        self.scanvas.pack()
+        self.update()
+
+    def update(self):
+        # Get a frame from the video source
+        ret, frame = self.vid.read()
+    
+        if ret:
+            # Convert the image to RGB (for PIL) and then to ImageTk format
+            self.photo = ImageTk.PhotoImage(image=Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)))
+            self.scanvas.create_image(0, 0, image=self.photo, anchor=tk.NW)
+#
+            # Detect barcodes in the frame
+            for barcode in decode(frame):
+                self.barcode = barcode.data.decode('utf-8')
+                print(self.barcode)
+                self.barcode_entry.delete(0, tk.END)
+                self.barcode_entry.insert(0, self.barcode)
+                #self.lookup_food()
+                #self.toggle_preview() 
+
+        # Repeat after an interval to get the next frame
+        self.root.after(10, self.update)  # update after 10 miliseconds
+    
 
     def setup_widgets(self):
         # Barcode Entry
@@ -150,7 +185,7 @@ class MealTrackerApp:
             self.camera_label.after(10, self.preview_camera)
 
     def lookup_food(self, barcode):
-        url = f"https://api.edamam.com/api/food-database/v2/parser?upc={barcode}&app_id={EDAMAM_APP_ID}&app_key={EDAMAM_APP_KEY}"
+        url = f"https://api.edamam.com/api/food-database/v2/parser?upc={self.barcode}&app_id={EDAMAM_APP_ID}&app_key={EDAMAM_APP_KEY}"
         response = requests.get(url)
         
         if response.status_code == 200:
