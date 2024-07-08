@@ -19,10 +19,7 @@ import requests
 import sqlite3
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
-
-# Replace with your Edamam API credentials
-EDAMAM_APP_ID = 'c84de14f'
-EDAMAM_APP_KEY = '1ebb13efd3d06a3c1d33a6c10cd660b3'
+from api_keys import EDAMAM_APP_ID, EDAMAM_APP_KEY
 
 class MealTrackerApp:
     def __init__(self, root):
