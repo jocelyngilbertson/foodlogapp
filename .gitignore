@@ -1,4 +1,5 @@
-api_keys.py 
+api_keys.py
+.vscode
 
 .DS_Store
 # Byte-compiled / optimized / DLL files
