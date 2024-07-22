@@ -40,6 +40,9 @@ Next, do the following:
 - **Permissions**: Allow access to your camera when prompted
 - **Get started**: Begin to either type the name of the food, or hold the food item with the barcode facing the camera to scan it to begin using it 
 
+The main application logic is contained within the `run_TkInter.py` file.
+### `run_TkInter.py`
+
 ## USING THE APPLICATION
 The app has multifaceted options for use cases. For example, upon running the application, the camera will be off by default. If you’d like to turn it on, click “scan barcode.” This will launch your camera. Next, hold the barcode up to the camera. This will scan the barcode and the UPC number will automatically enter into the text field. If you’d like (or if the barcode scanner doesn’t work), you can type in the UPC code manually. Additionally, you can start to type the food name in the text field and you will see food names beginning to auto populate. If you see the food in the autocomplete list, simply click it. If not, continue to type it out until it’s complete. 
 Next, now that you have your food inputted, click `log food.`
