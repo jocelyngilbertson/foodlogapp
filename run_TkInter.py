@@ -58,6 +58,7 @@ class MealTrackerApp:
         self.camera_frame = ttk.Frame(self.root)
         self.camera_frame.pack(pady=10)
         
+        
     def export_all_to_file(self):
         with open('meal_tracker_export.csv', 'w', newline='') as csvfile:
             writer = csv.writer(csvfile)
@@ -187,7 +188,7 @@ class MealTrackerApp:
             self.servings_entry.delete(0, tk.END)
             self.servings_entry.insert(0, servings)
         elif response.status_code == 404:
-            messagebox.showerror("API Error", "Barcode not found. Are you sure this is a food related item?")
+            messagebox.showerror("API Error", "Barcode not found. Please manually enter your item in 'food name.'")
         else:
             messagebox.showerror("API Error", f"An error occurred: {response.status_code}")
 
@@ -241,20 +242,18 @@ class MealTrackerApp:
     def fetch_servings(self, food_name):
         url = f"https://api.edamam.com/api/food-database/v2/parser?ingr={food_name}&app_id={EDAMAM_APP_ID}&app_key={EDAMAM_APP_KEY}"
         response = requests.get(url)
-        food_list = []
+        
         if response.status_code == 200:
             data = response.json()
             if 'parsed' in data and data['parsed']:
-                for f in data['parsed']:
-                    food_list.append(f["food"])
-            if 'hints' in data and data['hints']:
-                for f in data['hints']:
-                    food_list.append(f["food"])
+                food = data['parsed'][0]['food']
+            elif 'hints' in data and data['hints']:
+                food = data['hints'][0]['food']
             else:
                 messagebox.showerror("API Error", "Unable to fetch nutritional data.")
                 return
             
-            servings = self.get_serving_in_grams(food_list)
+            servings = self.get_serving_in_grams(food)
             if servings is None:
                 servings = 1
 
@@ -263,14 +262,13 @@ class MealTrackerApp:
         else:
             messagebox.showerror("API Error", f"An error occurred: {response.status_code}")
 
-    def get_serving_in_grams(self, food_list):
+    def get_serving_in_grams(self, food):
         serving_size = None
-        for food in food_list:
-            if 'servingSizes' in food and food['servingSizes']:
-                for serving in food['servingSizes']:
-                    if serving['label'].lower() == 'gram':
-                        serving_size = serving['quantity']
-                        break
+        if 'servingSizes' in food and food['servingSizes']:
+            for serving in food['servingSizes']:
+                if serving['label'].lower() == 'gram':
+                    serving_size = serving['quantity']
+                    break
         return serving_size
 
     def log_food(self):
@@ -338,4 +336,3 @@ if __name__ == "__main__":
     root = ttk.Window(themename="journal")
     app = MealTrackerApp(root)
     root.mainloop()
-    
