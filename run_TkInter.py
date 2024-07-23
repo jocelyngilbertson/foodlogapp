@@ -338,3 +338,4 @@ if __name__ == "__main__":
     root = ttk.Window(themename="journal")
     app = MealTrackerApp(root)
     root.mainloop()
+    
