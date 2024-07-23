@@ -1,15 +1,6 @@
 import subprocess
 import sys
- 
-def install(package):
-    subprocess.check_call([sys.executable, "-m", "pip", "install", package])
- 
-# Install packages
-# install("opencv-python")
-# install("pyzbar")
-# install("requests")
-# install ("ttkbootstrap")
- 
+import csv 
 import tkinter as tk
 from tkinter import messagebox
 from PIL import Image, ImageTk
@@ -55,46 +46,27 @@ class MealTrackerApp:
         self.conn.commit()
 
     def setup_frames(self):
-        self.top_frame = tk.Frame(self.root)
+        self.top_frame = ttk.Frame(self.root)
         self.top_frame.pack(pady=10)
 
-        self.middle_frame = tk.Frame(self.root)
+        self.middle_frame = ttk.Frame(self.root)
         self.middle_frame.pack(pady=10)
 
-        self.bottom_frame = tk.Frame(self.root)
+        self.bottom_frame = ttk.Frame(self.root)
         self.bottom_frame.pack(pady=10)
 
-        self.camera_frame = tk.Frame(self.root)
+        self.camera_frame = ttk.Frame(self.root)
         self.camera_frame.pack(pady=10)
-        # Open the video source
-        self.vid = cv2.VideoCapture(0)
+        
+        
+    def export_all_to_file(self):
+        with open('meal_tracker_export.csv', 'w', newline='') as csvfile:
+            writer = csv.writer(csvfile)
+            writer.writerow(["Barcode", "Food Name", "Servings (g)"])  # header row
+            for item in self.food_items:
+                writer.writerow([item['barcode'], item['food_name'], item['servings']])
 
-        # Create a canvas that can fit the above video source size
-        self.scanvas = tk.Canvas(self.camera_frame, width=self.vid.get(cv2.CAP_PROP_FRAME_WIDTH), height=self.vid.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        self.scanvas.pack()
-        self.update()
-
-    def update(self):
-        # Get a frame from the video source
-        ret, frame = self.vid.read()
-    
-        if ret:
-            # Convert the image to RGB (for PIL) and then to ImageTk format
-            self.photo = ImageTk.PhotoImage(image=Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)))
-            self.scanvas.create_image(0, 0, image=self.photo, anchor=tk.NW)
-#
-            # Detect barcodes in the frame
-            for barcode in decode(frame):
-                self.barcode = barcode.data.decode('utf-8')
-                print(self.barcode)
-                self.barcode_entry.delete(0, tk.END)
-                self.barcode_entry.insert(0, self.barcode)
-                #self.lookup_food()
-                #self.toggle_preview() 
-
-        # Repeat after an interval to get the next frame
-        self.root.after(10, self.update)  # update after 10 miliseconds
-    
+        messagebox.showinfo("Export Successful", "All meal entries have been exported to meal_tracker_export.csv")
 
     def setup_widgets(self):
         # Barcode Entry
@@ -108,7 +80,7 @@ class MealTrackerApp:
 
         # Look Up Button
         self.lookup_button = ttk.Button(self.top_frame, text="Look Up Barcode", command=self.lookup_food_manual, bootstyle=SUCCESS)
-        self.lookup_button.grid(row=1, column=1, padx=5, pady=5)
+        self.lookup_button.grid(row=2, column=2, padx=5, pady=5)
 
         # Food Name Entry
         ttk.Label(self.top_frame, text="Food Name:").grid(row=2, column=0, padx=5, pady=5)
@@ -128,11 +100,12 @@ class MealTrackerApp:
         self.servings_entry.grid(row=4, column=1, padx=5, pady=5)
 
         # Log Food Button
-        self.log_button = ttk.Button(self.middle_frame, text="Log Food", command=self.log_food, bootstyle=PRIMARY)
-        self.log_button.pack(pady=5)
+        self.log_button = ttk.Button(self.top_frame, text="Log Food", command=self.log_food, bootstyle=PRIMARY)
+        self.log_button.grid(row=4, column=2, padx=5, pady=5)
+
 
         # Listbox for logged food items
-        self.food_listbox = tk.Listbox(self.bottom_frame, width=80, height=10)
+        self.food_listbox = tk.Listbox(self.bottom_frame, width=70, height=10)
         self.food_listbox.pack(side=tk.LEFT, padx=5)
 
         # Scrollbar for listbox
@@ -150,6 +123,15 @@ class MealTrackerApp:
         self.camera_label = ttk.Label(self.camera_frame)
         self.camera_label.pack(pady=10)
 
+       # Export All to File Button
+        self.export_button = ttk.Button(self.bottom_frame, text="Export All to File", command=self.export_all_to_file, bootstyle=SUCCESS)
+        self.export_button.pack(pady=5)
+
+    def enable_lookup_button(self, event):
+        if self.barcode_entry.get():
+            self.lookup_button.config(state=tk.NORMAL)
+        else:
+            self.lookup_button.config(state=tk.DISABLED)
     def toggle_preview(self):
         if self.previewing:
             self.previewing = False
@@ -159,6 +141,7 @@ class MealTrackerApp:
             self.previewing = True
             self.cap = cv2.VideoCapture(0)
             self.preview_camera()
+        self.barcode_entry.delete(0, tk.END)
 
     def preview_camera(self):
         if self.previewing:
@@ -182,7 +165,7 @@ class MealTrackerApp:
             self.camera_label.after(10, self.preview_camera)
 
     def lookup_food(self, barcode):
-        url = f"https://api.edamam.com/api/food-database/v2/parser?upc={self.barcode}&app_id={EDAMAM_APP_ID}&app_key={EDAMAM_APP_KEY}"
+        url = f"https://api.edamam.com/api/food-database/v2/parser?upc={barcode}&app_id={EDAMAM_APP_ID}&app_key={EDAMAM_APP_KEY}"
         response = requests.get(url)
         
         if response.status_code == 200:
@@ -205,7 +188,7 @@ class MealTrackerApp:
             self.servings_entry.delete(0, tk.END)
             self.servings_entry.insert(0, servings)
         elif response.status_code == 404:
-            messagebox.showerror("API Error", "Barcode not found. Are you sure this is a food related item?")
+            messagebox.showerror("API Error", "Barcode not found. Please manually enter your item in 'food name.'")
         else:
             messagebox.showerror("API Error", f"An error occurred: {response.status_code}")
 
@@ -221,6 +204,9 @@ class MealTrackerApp:
         if not query:
             self.autocomplete_listbox.delete(0, tk.END)
             return
+        if len(query) < 3: # Don't search until at least 3 characters are entered
+            return
+            
 
         url = f"https://api.edamam.com/api/food-database/v2/parser?ingr={query}&app_id={EDAMAM_APP_ID}&app_key={EDAMAM_APP_KEY}"
         response = requests.get(url)
@@ -229,9 +215,15 @@ class MealTrackerApp:
             data = response.json()
             self.autocomplete_listbox.delete(0, tk.END)
             if 'hints' in data and data['hints']:
-                for item in data['hints']:
-                    food_label = item['food']['label']
-                    self.autocomplete_listbox.insert(tk.END, food_label)
+                    for item in data['hints']:
+                        food= item['food']
+                        food_label = food['label']
+                        food_brand = food.get('brand',"")
+                        food_category = food.get('category',"")
+                        text = f"{food_label}, {food_brand}"
+                        self.autocomplete_listbox.insert(tk.END, text)
+                        self.autocomplete_listbox.see(tk.END)
+                        self.autocomplete_listbox.update()
         else:
             self.autocomplete_listbox.delete(0, tk.END)
 
